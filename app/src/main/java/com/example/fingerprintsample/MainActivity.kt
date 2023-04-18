@@ -81,6 +81,8 @@ class MainActivity : AppCompatActivity(), SGFingerPresentEvent {
     private var bFingerprintRegistered = false
     private var mFakeDetectionLevel = 1
 
+    private var scanType: ScanType = ScanType.NORMAL
+
     private val mUsbReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
@@ -171,136 +173,173 @@ class MainActivity : AppCompatActivity(), SGFingerPresentEvent {
 
     private fun setOnClickListeners() {
         binding.btnScan.setOnClickListener {
-            if (isFingerPrintDeviceFound() && hasUsbPermission()) {
-                enableButtons(false)
-                showPlaceFingerOnDevice()
-                autoOn!!.start()
-
-            }
+            scanType = ScanType.NORMAL
+            startScanning()
         }
 
         binding.btnRegister.setOnClickListener {
-            enableButtons(false)
-
-            showPlaceFingerOnDevice()
-            registerFingerPrint()
+            scanType = ScanType.REGISTRATION
+            startScanning()
 
         }
 
 
         binding.btnVerify.setOnClickListener {
+            scanType = ScanType.VERIFICATION
+            startScanning()
+        }
+    }
+
+    private fun startScanning() {
+        if (isFingerPrintDeviceFound() && hasUsbPermission()) {
             enableButtons(false)
-
             showPlaceFingerOnDevice()
-
-            verifyFingerPrint()
-
+            autoOn!!.start()
         }
     }
 
     fun registerFingerPrint() {
-        if (mRegisterImage != null) mRegisterImage = null
-        mRegisterImage = ByteArray(mImageWidth * mImageHeight)
-        bFingerprintRegistered = false
-        jsgfplib.GetImageEx(
-            mRegisterImage,
-            IMAGE_CAPTURE_TIMEOUT_MS.toLong(),
-            IMAGE_CAPTURE_QUALITY.toLong()
-        )
+        lifecycleScope.launch {
+            showScanningFingerPrint()
 
-        binding.ivFingerPrint.setImageBitmap(toGrayscale(mRegisterImage!!))
-        jsgfplib.SetTemplateFormat(SGFDxTemplateFormat.TEMPLATE_FORMAT_ISO19794)
+            if (mRegisterImage != null) mRegisterImage = null
+            mRegisterImage = ByteArray(mImageWidth * mImageHeight)
+            bFingerprintRegistered = false
 
-        val quality1 = IntArray(1)
-        jsgfplib.GetImageQuality(
-            mImageWidth.toLong(),
-            mImageHeight.toLong(),
-            mRegisterImage,
-            quality1
-        )
+            var fpInfo: SGFingerInfo? = SGFingerInfo()
 
-        var fpInfo: SGFingerInfo? = SGFingerInfo()
-        fpInfo!!.FingerNumber = 1
-        fpInfo.ImageQuality = quality1[0]
-        fpInfo.ImpressionType = SGImpressionType.SG_IMPTYPE_LP
-        fpInfo.ViewNumber = 1
-        for (i in mRegisterTemplate!!.indices) mRegisterTemplate!![i] = 0
+            val job = lifecycleScope.async(Dispatchers.IO) {
+                var status = false
 
-        var result = jsgfplib.CreateTemplate(fpInfo, mRegisterImage, mRegisterTemplate)
+                jsgfplib.GetImageEx(
+                    mRegisterImage,
+                    IMAGE_CAPTURE_TIMEOUT_MS.toLong(),
+                    IMAGE_CAPTURE_QUALITY.toLong()
+                )
 
-        binding.ivFingerPrint.setImageBitmap(toGrayscale(mRegisterImage!!))
-        if (result == SGFDxErrorCode.SGFDX_ERROR_NONE) {
-            bFingerprintRegistered = true
-            val size = IntArray(1)
-            jsgfplib.GetTemplateSize(mRegisterTemplate, size)
+                jsgfplib.SetTemplateFormat(SGFDxTemplateFormat.TEMPLATE_FORMAT_ISO19794)
+                val quality1 = IntArray(1)
+                jsgfplib.GetImageQuality(
+                    mImageWidth.toLong(),
+                    mImageHeight.toLong(),
+                    mRegisterImage,
+                    quality1
+                )
 
-            showSuccessOrFail(true,"Fingerprint registerd")
-        } else {
-            showSuccessOrFail(true,"Fingerprint not registerd")
+
+                fpInfo!!.FingerNumber = 1
+                fpInfo!!.ImageQuality = quality1[0]
+                fpInfo!!.ImpressionType = SGImpressionType.SG_IMPTYPE_LP
+                fpInfo!!.ViewNumber = 1
+                for (i in mRegisterTemplate!!.indices) mRegisterTemplate!![i] = 0
+
+                var result = jsgfplib.CreateTemplate(fpInfo, mRegisterImage, mRegisterTemplate)
+
+                if (result == SGFDxErrorCode.SGFDX_ERROR_NONE) {
+                    bFingerprintRegistered = true
+                    val size = IntArray(1)
+                    jsgfplib.GetTemplateSize(mRegisterTemplate, size)
+
+                    status = true
+                } else {
+                    status = false
+                }
+
+
+                status
+            }
+
+            if (job.await()) {
+                binding.ivFingerPrint.setImageBitmap(toGrayscale(mRegisterImage!!))
+                showSuccessOrFail(true, "Fingerprint registration successful")
+            } else {
+                showSuccessOrFail(false, "Fingerprint registration failed")
+            }
+
+            fpInfo = null
+            mRegisterImage = null
+
         }
-        mRegisterImage = null
-        fpInfo = null
+
+
+
+
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////
     fun verifyFingerPrint() {
         if (!bFingerprintRegistered) {
-            binding.tvMsg.setText("Please Register a finger")
+            showSuccessOrFail(false,"Please Register A FingerPrint First")
             jsgfplib.SetLedOn(false)
             return
         }
         if (mVerifyImage != null) mVerifyImage = null
         mVerifyImage = ByteArray(mImageWidth * mImageHeight)
 
-        jsgfplib.GetImageEx(
-            mVerifyImage,
-            IMAGE_CAPTURE_TIMEOUT_MS.toLong(),
-            IMAGE_CAPTURE_QUALITY.toLong()
-        )
+        lifecycleScope.launch {
+            showScanningFingerPrint()
+            var fpInfo: SGFingerInfo?
 
-        binding.ivFingerPrint.setImageBitmap(toGrayscale(mVerifyImage!!))
-        jsgfplib.SetTemplateFormat(SGFDxTemplateFormat.TEMPLATE_FORMAT_ISO19794)
+            val job = lifecycleScope.async(Dispatchers.IO) {
+                var status = false
 
-        val quality = IntArray(1)
-        jsgfplib.GetImageQuality(
-            mImageWidth.toLong(),
-            mImageHeight.toLong(),
-            mVerifyImage,
-            quality
-        )
+                jsgfplib.GetImageEx(
+                    mVerifyImage,
+                    IMAGE_CAPTURE_TIMEOUT_MS.toLong(),
+                    IMAGE_CAPTURE_QUALITY.toLong()
+                )
 
-        var fpInfo: SGFingerInfo? = SGFingerInfo()
-        fpInfo!!.FingerNumber = 1
-        fpInfo.ImageQuality = quality[0]
-        fpInfo.ImpressionType = SGImpressionType.SG_IMPTYPE_LP
-        fpInfo.ViewNumber = 1
-        for (i in mVerifyTemplate!!.indices) mVerifyTemplate!![i] = 0
+                binding.ivFingerPrint.setImageBitmap(toGrayscale(mVerifyImage!!))
+                jsgfplib.SetTemplateFormat(SGFDxTemplateFormat.TEMPLATE_FORMAT_ISO19794)
 
-        var result = jsgfplib.CreateTemplate(fpInfo, mVerifyImage, mVerifyTemplate)
+                val quality = IntArray(1)
+                jsgfplib.GetImageQuality(
+                    mImageWidth.toLong(),
+                    mImageHeight.toLong(),
+                    mVerifyImage,
+                    quality
+                )
 
-        if (result == SGFDxErrorCode.SGFDX_ERROR_NONE) {
-            val size = IntArray(1)
-            jsgfplib.GetTemplateSize(mVerifyTemplate, size)
+                fpInfo = SGFingerInfo().apply {
+                    FingerNumber = 1
+                    ImageQuality =  quality[0]
+                    ImpressionType = SGImpressionType.SG_IMPTYPE_LP
+                    ViewNumber = 1
+                }
 
-            var matched: BooleanArray? = BooleanArray(1)
+                for (i in mVerifyTemplate!!.indices) mVerifyTemplate!![i] = 0
 
-            jsgfplib.MatchTemplate(
-                mRegisterTemplate,
-                mVerifyTemplate,
-                SGFDxSecurityLevel.SL_NORMAL,
-                matched
-            )
+                var result = jsgfplib.CreateTemplate(fpInfo, mVerifyImage, mVerifyTemplate)
 
-            if (matched!![0]) {
-                showSuccessOrFail(true,"Fingerprint matched!")
-            } else {
-                showSuccessOrFail(false,"Fingerprint not matched!")
+                if (result == SGFDxErrorCode.SGFDX_ERROR_NONE) {
+                    val size = IntArray(1)
+                    jsgfplib.GetTemplateSize(mVerifyTemplate, size)
+                    var matched: BooleanArray? = BooleanArray(1)
+                    jsgfplib.MatchTemplate(
+                        mRegisterTemplate,
+                        mVerifyTemplate,
+                        SGFDxSecurityLevel.SL_NORMAL,
+                        matched
+                    )
+
+                    if (matched!![0]) {
+                        status = true
+                    }
+                    matched = null
+                }
+
+                status
             }
-            matched = null
-        } else  showSuccessOrFail(false,"Fingerprint template extraction failed.")
-        mVerifyImage = null
-        fpInfo = null
+
+            if (job.await()) {
+                binding.ivFingerPrint.setImageBitmap(toGrayscale(mVerifyImage!!))
+                showSuccessOrFail(true, "Fingerprint matched")
+            } else {
+                showSuccessOrFail(false, "Fingerprint not matched")
+            }
+
+            fpInfo = null
+            mVerifyImage = null
+        }
     }
 
     private fun scanFingerPrint() {
@@ -430,7 +469,12 @@ class MainActivity : AppCompatActivity(), SGFingerPresentEvent {
 
     var fingerDetectedHandler: Handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
-            scanFingerPrint()
+            when(scanType){
+                ScanType.NORMAL ->  scanFingerPrint()
+                ScanType.REGISTRATION ->  registerFingerPrint()
+                ScanType.VERIFICATION ->  verifyFingerPrint()
+            }
+
         }
     }
 
