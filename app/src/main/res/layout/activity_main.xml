@@ -6,6 +6,19 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <TextView
+        android:id="@+id/tv_device"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/holo_red_light"
+        android:padding="4dp"
+        android:text="Fingerprint device is not connected!"
+        android:textAlignment="center"
+        android:textColor="@color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnScan"
@@ -21,15 +34,15 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:paddingHorizontal="20dp"
-        android:background="@drawable/bg_btn_register"
-        android:textColor="@color/white"
         android:id="@+id/btnRegister"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_btn_register"
+        android:paddingHorizontal="20dp"
         android:text="Register Finger"
+        android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/btnVerify"
         app:layout_constraintHorizontal_bias="0.5"
@@ -37,14 +50,14 @@
 
 
     <androidx.appcompat.widget.AppCompatButton
-        android:paddingHorizontal="20dp"
-        android:background="@drawable/bg_btn_verify"
-        android:textColor="@color/white"
         android:id="@+id/btnVerify"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_btn_verify"
+        android:paddingHorizontal="20dp"
         android:text="Verify Finger"
+        android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
@@ -69,7 +82,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
 
     <TextView
         android:id="@+id/tvMsg"

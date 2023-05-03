@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--SecuGen SDU03P 0x1162 0x1000-->
+    <usb-device
+        product-id="4096"
+        vendor-id="4450" />
+    <!--SecuGen SDU04P  0x1162 0x2000-->
+    <usb-device
+        product-id="8192"
+        vendor-id="4450" />
+    <!--SecuGen U20  0x1162 0x2200-->
+    <usb-device
+        product-id="8704"
+        vendor-id="4450" />
+    <!--SecuGen U20-2  0x1162 0x22BA-->
+    <usb-device
+        product-id="8890"
+        vendor-id="4450" />
+    <!--SecuGen UPx  0x1162 0x2201-->
+    <usb-device
+        product-id="8705"
+        vendor-id="4450" />
+    <!--SecuGen U10  0x1162 0x2203-->
+    <usb-device
+        product-id="8707"
+        vendor-id="4450" />
+    <!--SecuGen U20-AP  0x1162 0x2220-->
+    <usb-device
+        product-id="8736"
+        vendor-id="4450" />
+    <!--SecuGen U20-A  0x1162 0x2240-->
+    <usb-device
+        product-id="8768"
+        vendor-id="4450" />
+    <!--SecuGen U20-AP-A  0x1162 0x2360-->
+    <usb-device
+        product-id="9056"
+        vendor-id="4450" />
+    <!--SecuGen U30-A  0x1162 0x2410-->
+    <usb-device
+        product-id="9232"
+        vendor-id="4450" />
+    <!--SecuGen U-AIR  0x1162 0x2500-->
+    <usb-device
+        product-id="9472"
+        vendor-id="4450" />
+</resources>
